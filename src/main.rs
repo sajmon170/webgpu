@@ -1,3 +1,4 @@
+use wgpu::{wgc::device::BufferMapPendingClosure, ColorTargetState};
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
@@ -58,6 +59,7 @@ struct Viewport {
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
+    pipeline: wgpu::RenderPipeline
 }
 
 impl Viewport {
@@ -109,7 +111,6 @@ impl Viewport {
 
     async fn get_device(adapter: &wgpu::Adapter) -> Result<(wgpu::Device, wgpu::Queue)> {
         let descriptor = wgpu::DeviceDescriptor::default();
-
         let (device, queue) = adapter.request_device(&descriptor).await?;
 
         device.set_device_lost_callback(|reason, message| {
@@ -122,6 +123,51 @@ impl Viewport {
         Ok((device, queue))
     }
 
+    fn get_pipeline(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration)
+                    -> wgpu::RenderPipeline {
+        let shader_module = device.create_shader_module(
+            wgpu::include_wgsl!("shader.wgsl")
+        );
+
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Triangle render"),
+            layout: None,
+            vertex: wgpu::VertexState {
+                module: &shader_module,
+                entry_point: Some("vs_main"),
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+                buffers: &[]
+            },
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None,
+                unclipped_depth: false,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                conservative: false
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader_module,
+                entry_point: Some("fs_main"),
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+                targets: &vec![Some(wgpu::ColorTargetState {
+                    format: config.format,
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    write_mask: wgpu::ColorWrites::ALL
+                })],
+            }),
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0u64,
+                alpha_to_coverage_enabled: false
+            },
+            multiview: None,
+            cache: None
+        })
+    }
+
     pub async fn new(window: Window, size: PhysicalSize<u32>) -> Result<Self> {
         let instance = Self::get_instance();
         let surface = instance.create_surface(window)?;
@@ -131,11 +177,14 @@ impl Viewport {
         let config = Self::get_config(&adapter, &surface, size);
         surface.configure(&device, &config);
 
+        let pipeline = Self::get_pipeline(&device, &config);
+
         Ok(Self {
             surface,
             device,
             queue,
             config,
+            pipeline
         })
     }
 
@@ -149,6 +198,7 @@ impl Viewport {
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
+ 
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -156,7 +206,7 @@ impl Viewport {
             });
 
         {
-            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
@@ -176,6 +226,9 @@ impl Viewport {
                 occlusion_query_set: None,
                 timestamp_writes: None,
             });
+
+            render_pass.set_pipeline(&self.pipeline);
+            render_pass.draw(0..3, 0..1);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
