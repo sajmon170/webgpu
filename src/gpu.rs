@@ -14,17 +14,17 @@ pub struct Gpu {
 
 impl Gpu {
     const VERTICES: &[Vertex] = &[
-        Vertex { pos: [-0.7,  -0.3, 0.0] },
-        Vertex { pos: [ -0.4,  -0.7, 0.0] },
-        Vertex { pos: [ -0.9, -0.7, 0.0] },
+        Vertex { pos: [-0.7,  -0.3,  0.0], color: [1.0, 0.0, 0.0] },
+        Vertex { pos: [-0.4,  -0.7,  0.0], color: [0.0, 1.0, 0.0] },
+        Vertex { pos: [-0.9,  -0.7,  0.0], color: [0.0, 0.0, 1.0] },
         
-        Vertex { pos: [-0.6,  0.8, 0.0] },
-        Vertex { pos: [ 0.7,  0.6, 0.0] },
-        Vertex { pos: [ 0.0, -0.8, 0.0] },
+        Vertex { pos: [-0.6,   0.8,  0.0], color: [1.0, 0.0, 0.0] },
+        Vertex { pos: [ 0.7,   0.6,  0.0], color: [0.0, 1.0, 0.0] },
+        Vertex { pos: [ 0.0,  -0.8,  0.0], color: [0.0, 0.0, 1.0] },
         
-        Vertex { pos: [0.8,  0.95, 0.0] },
-        Vertex { pos: [ 0.6,  0.7, 0.0] },
-        Vertex { pos: [ 0.95, 0.5, 0.0] },
+        Vertex { pos: [ 0.8,   0.95, 0.0], color: [1.0, 0.0, 0.0] },
+        Vertex { pos: [ 0.6,   0.7,  0.0], color: [0.0, 1.0, 0.0] },
+        Vertex { pos: [ 0.95,  0.5,  0.0], color: [0.0, 0.0, 1.0] },
     ];
 
     fn get_instance() -> wgpu::Instance {
@@ -60,7 +60,7 @@ impl Gpu {
 
     fn get_limits() -> wgpu::Limits {
         let mut limits = wgpu::Limits::defaults();
-        limits.max_vertex_attributes = 1;
+        limits.max_vertex_attributes = 2;
         limits.max_buffer_size = (Gpu::VERTICES.len() * size_of::<Vertex>()) as u64;
 
         limits
@@ -114,13 +114,7 @@ impl Gpu {
                     wgpu::VertexBufferLayout {
                         array_stride: size_of::<Vertex>() as u64,
                         step_mode: wgpu::VertexStepMode::Vertex,
-                        attributes: &[
-                            wgpu::VertexAttribute {
-                                format: wgpu::VertexFormat::Float32x3,
-                                offset: 0,
-                                shader_location: 0
-                            }
-                        ]
+                        attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3]
                     }
                 ]
             },
