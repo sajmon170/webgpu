@@ -1,5 +1,6 @@
 use winit::{dpi::PhysicalSize, window::Window};
 use anyhow::Result;
+use std::mem::size_of;
 use crate::data::Vertex;
 
 pub struct Gpu {
@@ -7,10 +8,25 @@ pub struct Gpu {
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
-    pipeline: wgpu::RenderPipeline
+    pipeline: wgpu::RenderPipeline,
+    vertex_buffer: wgpu::Buffer
 }
 
 impl Gpu {
+    const VERTICES: &[Vertex] = &[
+        Vertex { pos: [-0.7,  -0.3, 0.0] },
+        Vertex { pos: [ -0.4,  -0.7, 0.0] },
+        Vertex { pos: [ -0.9, -0.7, 0.0] },
+        
+        Vertex { pos: [-0.6,  0.8, 0.0] },
+        Vertex { pos: [ 0.7,  0.6, 0.0] },
+        Vertex { pos: [ 0.0, -0.8, 0.0] },
+        
+        Vertex { pos: [0.8,  0.95, 0.0] },
+        Vertex { pos: [ 0.6,  0.7, 0.0] },
+        Vertex { pos: [ 0.95, 0.5, 0.0] },
+    ];
+
     fn get_instance() -> wgpu::Instance {
         let descriptor = wgpu::InstanceDescriptor::default();
         wgpu::Instance::new(&descriptor)
@@ -45,7 +61,7 @@ impl Gpu {
     fn get_limits() -> wgpu::Limits {
         let mut limits = wgpu::Limits::defaults();
         limits.max_vertex_attributes = 1;
-        limits.max_buffer_size = (2*3*std::mem::size_of::<Vertex>()) as u64;
+        limits.max_buffer_size = (Gpu::VERTICES.len() * size_of::<Vertex>()) as u64;
 
         limits
     }
@@ -94,7 +110,19 @@ impl Gpu {
                 module: &shader_module,
                 entry_point: Some("vs_main"),
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
-                buffers: &[]
+                buffers: &[
+                    wgpu::VertexBufferLayout {
+                        array_stride: size_of::<Vertex>() as u64,
+                        step_mode: wgpu::VertexStepMode::Vertex,
+                        attributes: &[
+                            wgpu::VertexAttribute {
+                                format: wgpu::VertexFormat::Float32x3,
+                                offset: 0,
+                                shader_location: 0
+                            }
+                        ]
+                    }
+                ]
             },
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -109,7 +137,7 @@ impl Gpu {
                 module: &shader_module,
                 entry_point: Some("fs_main"),
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
-                targets: &vec![Some(wgpu::ColorTargetState {
+                targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL
@@ -126,12 +154,26 @@ impl Gpu {
         })
     }
 
+    fn make_vertex_buffer(device: &wgpu::Device, vtx: &[Vertex]) -> wgpu::Buffer {
+        let descriptor = wgpu::BufferDescriptor {
+            label: "Vertex buffer".into(),
+            size: (vtx.len() * size_of::<Vertex>()) as u64,
+            mapped_at_creation: false,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::VERTEX
+        };
+
+        device.create_buffer(&descriptor)
+    }
+
     pub async fn new(window: Window, size: PhysicalSize<u32>) -> Result<Self> {
         let instance = Self::get_instance();
         let surface = instance.create_surface(window)?;
         let adapter = Self::get_adapter(&instance, &surface).await?;
         let limits = Self::get_limits();
         let (device, queue) = Self::get_device(&adapter, limits).await?;
+
+        let vertex_buffer = Self::make_vertex_buffer(&device, Gpu::VERTICES);
+        queue.write_buffer(&vertex_buffer, 0, &bytemuck::cast_slice(Gpu::VERTICES));
 
         let config = Self::get_config(&adapter, &surface, size);
         surface.configure(&device, &config);
@@ -143,7 +185,8 @@ impl Gpu {
             device,
             queue,
             config,
-            pipeline
+            pipeline,
+            vertex_buffer
         })
     }
 
@@ -187,7 +230,8 @@ impl Gpu {
             });
 
             render_pass.set_pipeline(&self.pipeline);
-            render_pass.draw(0..3, 0..1);
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            render_pass.draw(0..Gpu::VERTICES.len() as u32, 0..1);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
