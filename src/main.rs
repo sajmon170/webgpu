@@ -1,4 +1,5 @@
 mod gpu;
+mod data;
 
 use winit::{
     application::ApplicationHandler,

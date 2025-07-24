@@ -1,5 +1,6 @@
 use winit::{dpi::PhysicalSize, window::Window};
 use anyhow::Result;
+use crate::data::Vertex;
 
 pub struct Gpu {
     surface: wgpu::Surface<'static>,
@@ -41,6 +42,14 @@ impl Gpu {
         }
     }
 
+    fn get_limits() -> wgpu::Limits {
+        let mut limits = wgpu::Limits::defaults();
+        limits.max_vertex_attributes = 1;
+        limits.max_buffer_size = (2*3*std::mem::size_of::<Vertex>()) as u64;
+
+        limits
+    }
+
     async fn get_adapter(
         instance: &wgpu::Instance,
         surface: &wgpu::Surface<'static>,
@@ -56,8 +65,10 @@ impl Gpu {
         Ok(adapter)
     }
 
-    async fn get_device(adapter: &wgpu::Adapter) -> Result<(wgpu::Device, wgpu::Queue)> {
-        let descriptor = wgpu::DeviceDescriptor::default();
+    async fn get_device(adapter: &wgpu::Adapter, limits: wgpu::Limits)
+                        -> Result<(wgpu::Device, wgpu::Queue)> {
+        let mut descriptor = wgpu::DeviceDescriptor::default();
+        descriptor.required_limits = limits;
         let (device, queue) = adapter.request_device(&descriptor).await?;
 
         device.set_device_lost_callback(|reason, message| {
@@ -119,7 +130,8 @@ impl Gpu {
         let instance = Self::get_instance();
         let surface = instance.create_surface(window)?;
         let adapter = Self::get_adapter(&instance, &surface).await?;
-        let (device, queue) = Self::get_device(&adapter).await?;
+        let limits = Self::get_limits();
+        let (device, queue) = Self::get_device(&adapter, limits).await?;
 
         let config = Self::get_config(&adapter, &surface, size);
         surface.configure(&device, &config);
