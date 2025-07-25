@@ -10,10 +10,12 @@ struct VertexOutput {
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
-    return VertexOutput(vec4f(in.pos, 1.0), in.color);
+    let ratio = 640.0/480.0;
+    return VertexOutput(vec4f(in.pos.x/ratio, in.pos.y, in.pos.z, 1.0), in.color);
 }
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4f {
-    return vec4f(in.color, 1.0);
+    let srgb = pow(in.color, vec3f(2.2));
+    return vec4f(srgb, 1.0);
 }

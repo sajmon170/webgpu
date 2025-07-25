@@ -9,23 +9,34 @@ pub struct Gpu {
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     pipeline: wgpu::RenderPipeline,
-    vertex_buffer: wgpu::Buffer
+    vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer
 }
 
 impl Gpu {
     const VERTICES: &[Vertex] = &[
-        Vertex { pos: [-0.7,  -0.3,  0.0], color: [1.0, 0.0, 0.0] },
-        Vertex { pos: [-0.4,  -0.7,  0.0], color: [0.0, 1.0, 0.0] },
-        Vertex { pos: [-0.9,  -0.7,  0.0], color: [0.0, 0.0, 1.0] },
-        
-        Vertex { pos: [-0.6,   0.8,  0.0], color: [1.0, 0.0, 0.0] },
-        Vertex { pos: [ 0.7,   0.6,  0.0], color: [0.0, 1.0, 0.0] },
-        Vertex { pos: [ 0.0,  -0.8,  0.0], color: [0.0, 0.0, 1.0] },
-        
-        Vertex { pos: [ 0.8,   0.95, 0.0], color: [1.0, 0.0, 0.0] },
-        Vertex { pos: [ 0.6,   0.7,  0.0], color: [0.0, 1.0, 0.0] },
-        Vertex { pos: [ 0.95,  0.5,  0.0], color: [0.0, 0.0, 1.0] },
+        Vertex { pos: [ 0.0,    1.0,   0.0], color: [1.0, 0.0, 0.0] },
+        Vertex { pos: [-0.35,   0.45,  0.0], color: [0.0, 1.0, 0.0] },
+        Vertex { pos: [-1.0,    0.3,   0.0], color: [0.0, 0.0, 1.0] },
+        Vertex { pos: [-0.55,  -0.15,  0.0], color: [1.0, 0.0, 0.0] },
+        Vertex { pos: [-0.6,   -1.0,   0.0], color: [0.0, 1.0, 0.0] },
+        Vertex { pos: [ 0.0,   -0.75,  0.0], color: [0.0, 0.0, 1.0] },
+        Vertex { pos: [ 0.6,   -1.0,   0.0], color: [0.0, 1.0, 0.0] },
+        Vertex { pos: [ 0.55,  -0.15,  0.0], color: [1.0, 0.0, 0.0] },
+        Vertex { pos: [ 1.0,    0.3,   0.0], color: [0.0, 0.0, 1.0] },
+        Vertex { pos: [ 0.35,   0.45,  0.0], color: [0.0, 1.0, 0.0] },
     ];
+
+    const INDICES: &[u16] = &[
+        0, 1, 9,
+        1, 2, 3,
+        3, 4, 5,
+        7, 5, 6,
+        9, 7, 8,
+        1, 3, 5,
+        9, 1, 5,
+        9, 5, 7
+    ]; 
 
     fn get_instance() -> wgpu::Instance {
         let descriptor = wgpu::InstanceDescriptor::default();
@@ -159,6 +170,17 @@ impl Gpu {
         device.create_buffer(&descriptor)
     }
 
+    fn make_index_buffer(device: &wgpu::Device, idx: &[u16]) -> wgpu::Buffer {
+        let descriptor = wgpu::BufferDescriptor {
+            label: "Index buffer".into(),
+            size: (idx.len() * size_of::<u16>()) as u64,
+            mapped_at_creation: false,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::INDEX
+        };
+
+        device.create_buffer(&descriptor)
+    }
+
     pub async fn new(window: Window, size: PhysicalSize<u32>) -> Result<Self> {
         let instance = Self::get_instance();
         let surface = instance.create_surface(window)?;
@@ -168,6 +190,9 @@ impl Gpu {
 
         let vertex_buffer = Self::make_vertex_buffer(&device, Gpu::VERTICES);
         queue.write_buffer(&vertex_buffer, 0, &bytemuck::cast_slice(Gpu::VERTICES));
+
+        let index_buffer = Self::make_index_buffer(&device, Gpu::INDICES);
+        queue.write_buffer(&index_buffer, 0, &bytemuck::cast_slice(Gpu::INDICES));
 
         let config = Self::get_config(&adapter, &surface, size);
         surface.configure(&device, &config);
@@ -180,7 +205,8 @@ impl Gpu {
             queue,
             config,
             pipeline,
-            vertex_buffer
+            vertex_buffer,
+            index_buffer
         })
     }
 
@@ -225,7 +251,9 @@ impl Gpu {
 
             render_pass.set_pipeline(&self.pipeline);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.draw(0..Gpu::VERTICES.len() as u32, 0..1);
+            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            //render_pass.draw(0..Gpu::VERTICES.len() as u32, 0..1);
+            render_pass.draw_indexed(0..Gpu::INDICES.len() as u32, 0, 0..1);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
