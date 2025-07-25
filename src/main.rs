@@ -13,7 +13,7 @@ use crate::gpu::Gpu;
 
 #[derive(Default)]
 struct App {
-    gpu: Option<Gpu>,
+    gpu: Option<Gpu>
 }
 
 impl ApplicationHandler for App {

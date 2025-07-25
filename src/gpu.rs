@@ -1,16 +1,20 @@
-use winit::{dpi::PhysicalSize, window::Window};
+use winit::{window::Window, dpi::PhysicalSize};
 use anyhow::Result;
-use std::mem::size_of;
+use std::{sync::Arc, mem::size_of, num::NonZero};
 use crate::data::Vertex;
 
 pub struct Gpu {
+    window: Arc<Window>,
     surface: wgpu::Surface<'static>,
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
-    index_buffer: wgpu::Buffer
+    index_buffer: wgpu::Buffer,
+    uniform_buffer: wgpu::Buffer,
+    bind_group: wgpu::BindGroup,
+    start_time: std::time::Instant
 }
 
 impl Gpu {
@@ -19,9 +23,9 @@ impl Gpu {
         Vertex { pos: [-0.35,   0.45,  0.0], color: [0.0, 1.0, 0.0] },
         Vertex { pos: [-1.0,    0.3,   0.0], color: [0.0, 0.0, 1.0] },
         Vertex { pos: [-0.55,  -0.15,  0.0], color: [1.0, 0.0, 0.0] },
-        Vertex { pos: [-0.6,   -1.0,   0.0], color: [0.0, 1.0, 0.0] },
-        Vertex { pos: [ 0.0,   -0.75,  0.0], color: [0.0, 0.0, 1.0] },
-        Vertex { pos: [ 0.6,   -1.0,   0.0], color: [0.0, 1.0, 0.0] },
+        Vertex { pos: [-0.6,   -0.9,   0.0], color: [0.0, 1.0, 0.0] },
+        Vertex { pos: [ 0.0,   -0.6,   0.0], color: [0.0, 0.0, 1.0] },
+        Vertex { pos: [ 0.6,   -0.9,   0.0], color: [0.0, 1.0, 0.0] },
         Vertex { pos: [ 0.55,  -0.15,  0.0], color: [1.0, 0.0, 0.0] },
         Vertex { pos: [ 1.0,    0.3,   0.0], color: [0.0, 0.0, 1.0] },
         Vertex { pos: [ 0.35,   0.45,  0.0], color: [0.0, 1.0, 0.0] },
@@ -73,6 +77,7 @@ impl Gpu {
         let mut limits = wgpu::Limits::defaults();
         limits.max_vertex_attributes = 2;
         limits.max_buffer_size = (Gpu::VERTICES.len() * size_of::<Vertex>()) as u64;
+        limits.max_bind_groups = 1;
 
         limits
     }
@@ -108,15 +113,60 @@ impl Gpu {
         Ok((device, queue))
     }
 
-    fn get_pipeline(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration)
-                    -> wgpu::RenderPipeline {
+    fn setup_bind_group(device: &wgpu::Device, uniform_buffer: &wgpu::Buffer)
+                        -> (wgpu::BindGroup, wgpu::PipelineLayout) {
+        let bind_group_layout_descriptor = wgpu::BindGroupLayoutDescriptor {
+            label: "Bind group layout".into(),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None
+                },
+                count: None
+            }]
+        };
+
+        let bind_group_layout = device.create_bind_group_layout(&bind_group_layout_descriptor);
+
+        let pipeline_descriptor = wgpu::PipelineLayoutDescriptor {
+            label: "Uniform buffer layout".into(),
+            bind_group_layouts: &[&bind_group_layout],
+            push_constant_ranges: &[]
+        };
+
+        let pipeline_layout = device.create_pipeline_layout(&pipeline_descriptor);
+
+        let bind_group_descriptor = wgpu::BindGroupDescriptor {
+            label: "Bind group".into(),
+            layout: &bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                    buffer: &uniform_buffer,
+                    offset: 0,
+                    size: NonZero::new((4 * size_of::<f32>()) as u64)
+                })
+            }]
+        };
+
+        let bind_group = device.create_bind_group(&bind_group_descriptor);
+
+        (bind_group, pipeline_layout)
+    }
+
+    fn get_pipeline(device: &wgpu::Device,
+                    config: &wgpu::SurfaceConfiguration,
+                    pipeline_layout: &wgpu::PipelineLayout) -> wgpu::RenderPipeline {
         let shader_module = device.create_shader_module(
             wgpu::include_wgsl!("shader.wgsl")
         );
 
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Triangle render"),
-            layout: None,
+            layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader_module,
                 entry_point: Some("vs_main"),
@@ -181,9 +231,23 @@ impl Gpu {
         device.create_buffer(&descriptor)
     }
 
+    fn make_uniform_buffer(device: &wgpu::Device) -> wgpu::Buffer {
+        let descriptor = wgpu::BufferDescriptor {
+            label: "Uniform buffer".into(),
+            // TODO: round the size to a multiple of 4 f32 values
+            size: 4 * size_of::<f32>() as u64,
+            mapped_at_creation: false,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::UNIFORM
+        };
+
+        device.create_buffer(&descriptor)
+    }
+
     pub async fn new(window: Window, size: PhysicalSize<u32>) -> Result<Self> {
+        let window = Arc::new(window);
+        
         let instance = Self::get_instance();
-        let surface = instance.create_surface(window)?;
+        let surface = instance.create_surface(window.clone())?;
         let adapter = Self::get_adapter(&instance, &surface).await?;
         let limits = Self::get_limits();
         let (device, queue) = Self::get_device(&adapter, limits).await?;
@@ -194,19 +258,29 @@ impl Gpu {
         let index_buffer = Self::make_index_buffer(&device, Gpu::INDICES);
         queue.write_buffer(&index_buffer, 0, &bytemuck::cast_slice(Gpu::INDICES));
 
+        let uniform_buffer = Self::make_uniform_buffer(&device);
+
         let config = Self::get_config(&adapter, &surface, size);
         surface.configure(&device, &config);
 
-        let pipeline = Self::get_pipeline(&device, &config);
+        let (bind_group, pipeline_layout) = Self::setup_bind_group(&device, &uniform_buffer);
+
+        let pipeline = Self::get_pipeline(&device, &config, &pipeline_layout);
+
+        let start_time = std::time::Instant::now();
 
         Ok(Self {
+            window,
             surface,
             device,
             queue,
             config,
             pipeline,
             vertex_buffer,
-            index_buffer
+            index_buffer,
+            uniform_buffer,
+            bind_group,
+            start_time
         })
     }
 
@@ -252,13 +326,21 @@ impl Gpu {
             render_pass.set_pipeline(&self.pipeline);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            //render_pass.draw(0..Gpu::VERTICES.len() as u32, 0..1);
+            render_pass.set_bind_group(0, &self.bind_group, &[]);
+
+            let time = std::time::Instant::now()
+                .duration_since(self.start_time)
+                .as_secs_f32();
+            
+            self.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&time));
+
             render_pass.draw_indexed(0..Gpu::INDICES.len() as u32, 0, 0..1);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
+        self.window.request_redraw();
         Ok(())
     }
 }

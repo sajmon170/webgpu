@@ -1,3 +1,5 @@
+@group(0) @binding(0) var<uniform> utime: f32;
+
 struct VertexInput {
     @location(0) pos: vec3f,
     @location(1) color: vec3f
@@ -11,7 +13,12 @@ struct VertexOutput {
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
     let ratio = 640.0/480.0;
-    return VertexOutput(vec4f(in.pos.x/ratio, in.pos.y, in.pos.z, 1.0), in.color);
+    let scale = mat2x2f(0.75, 0, 0, 0.75);
+    let rot = mat2x2f(cos(utime), sin(utime), -sin(utime), cos(utime));
+    let pos2d = vec2f(in.pos.x, in.pos.y);
+    let rotated = scale * rot * pos2d;
+    let pos = vec4f(rotated.x / ratio, rotated.y, in.pos.z, 1.0);
+    return VertexOutput(pos, in.color);
 }
 
 @fragment
