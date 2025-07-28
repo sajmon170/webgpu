@@ -56,9 +56,14 @@ impl Mesh {
     }
 
     pub fn new(gpu: &Gpu, vertices: Vec<Vertex>, indices: Vec<u16>) -> Self {
+        let vertex_buffer = Self::make_vertex_buffer(&gpu.device, &vertices);
+        gpu.queue.write_buffer(&vertex_buffer, 0, &bytemuck::cast_slice(&vertices));
+        let index_buffer = Self::make_index_buffer(&gpu.device, &indices);
+        gpu.queue.write_buffer(&index_buffer, 0, &bytemuck::cast_slice(&indices));
+        
         Self {
-            vertex_buffer: Self::make_vertex_buffer(&gpu.device, &vertices),
-            index_buffer: Self::make_index_buffer(&gpu.device, &indices),
+            vertex_buffer,
+            index_buffer,
             vertices,
             indices,
         }
