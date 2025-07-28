@@ -109,7 +109,7 @@ impl Gpu {
         self.config.height = size.height;
     }
 
-    pub fn render(&self, set_render_pass: impl Fn(&mut wgpu::RenderPass)) -> Result<()> {
+    pub fn render(&self, mut set_render_pass: impl FnMut(&mut wgpu::RenderPass)) -> Result<()> {
         let output = self.surface.get_current_texture()?;
         let view = output
             .texture

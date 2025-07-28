@@ -1,4 +1,9 @@
-@group(0) @binding(0) var<uniform> utime: f32;
+@group(0) @binding(0) var<uniform> uInput: BindingInput;
+
+struct BindingInput {
+    xform: mat3x3f,
+    time: f32
+}
 
 struct VertexInput {
     @location(0) pos: vec3f,
@@ -13,11 +18,11 @@ struct VertexOutput {
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
     let ratio = 640.0/480.0;
-    let scale = mat2x2f(0.75, 0, 0, 0.75);
-    let rot = mat2x2f(cos(utime), sin(utime), -sin(utime), cos(utime));
-    let pos2d = vec2f(in.pos.x, in.pos.y);
-    let rotated = scale * rot * pos2d;
-    let pos = vec4f(rotated.x / ratio, rotated.y, in.pos.z, 1.0);
+    let xform = uInput.xform;
+    let rot = mat3x3f(cos(uInput.time), sin(uInput.time), 0, -sin(uInput.time), cos(uInput.time), 0, 0, 0, 1);
+    let pos3d = vec3f(in.pos.x, in.pos.y, 1.0);
+    let rotated = xform * rot * pos3d;
+    let pos = vec4f((rotated.x - (uInput.time % 6.5) + 3.0) / ratio, rotated.y - (uInput.time % 6.5) + 3.0, in.pos.z, 1.0);
     return VertexOutput(pos, in.color);
 }
 

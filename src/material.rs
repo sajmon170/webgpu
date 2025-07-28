@@ -1,15 +1,30 @@
-use std::{mem::size_of, num::NonZero};
+use std::{default::Default, mem::size_of, num::NonZero};
 use crate::{data::Vertex, gpu::Gpu};
+use bytemuck::NoUninit;
+use glam::{Mat3A, Vec2};
 
 pub trait Material {
     fn set_render_pass(&self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue);
+    // TODO: refactor transforms out of materials into a separate bind group
+    // owned by Object
+    fn set_transform(&mut self, transform: Mat3A);
+}
+
+#[repr(C, packed)]
+#[derive(Copy, Clone, NoUninit)]
+struct UniformData {
+    pub xform: Mat3A,
+    pub time: f32,
+    _align: [u8; 16 - size_of::<f32>()],
 }
 
 pub struct MaterialBasic {
     pipeline: wgpu::RenderPipeline,
     bind_group: wgpu::BindGroup,
     uniform_buffer: wgpu::Buffer,
-    start_time: std::time::Instant
+    start_time: std::time::Instant,
+    // TODO - refactor this
+    xform: Mat3A
 }
 
 impl MaterialBasic {
@@ -47,7 +62,7 @@ impl MaterialBasic {
                 resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
                     buffer: &uniform_buffer,
                     offset: 0,
-                    size: NonZero::new((4 * size_of::<f32>()) as u64)
+                    size: NonZero::new(size_of::<UniformData>() as u64)
                 })
             }]
         };
@@ -113,7 +128,7 @@ impl MaterialBasic {
         let descriptor = wgpu::BufferDescriptor {
             label: "Uniform buffer".into(),
             // TODO: round the size to a multiple of 4 f32 values
-            size: 4 * size_of::<f32>() as u64,
+            size: size_of::<UniformData>() as u64,
             mapped_at_creation: false,
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::UNIFORM
         };
@@ -131,7 +146,8 @@ impl MaterialBasic {
             bind_group,
             uniform_buffer,
             pipeline,
-            start_time
+            start_time,
+            xform: Mat3A::IDENTITY
         }
     }
 }
@@ -140,10 +156,21 @@ impl Material for MaterialBasic {
     fn set_render_pass(&self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
+
         let time = std::time::Instant::now()
             .duration_since(self.start_time)
             .as_secs_f32();
 
-        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&time));
+        let uniform_data = UniformData {
+            xform: self.xform,
+            time,
+            _align: Default::default(),
+        };
+
+        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniform_data));
+    }
+
+    fn set_transform(&mut self, transform: Mat3A) {
+        self.xform = transform;
     }
 }
