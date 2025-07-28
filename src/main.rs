@@ -1,4 +1,8 @@
 mod gpu;
+mod renderer;
+mod object;
+mod material;
+mod mesh;
 mod data;
 
 use winit::{
@@ -9,11 +13,14 @@ use winit::{
     window::Window,
 };
 
-use crate::gpu::Gpu;
+use crate::{
+    gpu::Gpu,
+    renderer::Renderer,
+};
 
 #[derive(Default)]
 struct App {
-    gpu: Option<Gpu>
+    renderer: Option<Renderer>
 }
 
 impl ApplicationHandler for App {
@@ -25,7 +32,8 @@ impl ApplicationHandler for App {
             .with_resizable(false);
 
         let window = event_loop.create_window(attrs).unwrap();
-        self.gpu = Some(pollster::block_on(Gpu::new(window, size)).unwrap());
+        let gpu = pollster::block_on(Gpu::new(window, size)).unwrap();
+        self.renderer = Some(Renderer::new(gpu));
     }
 
     fn window_event(
@@ -34,8 +42,8 @@ impl ApplicationHandler for App {
         _id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
-        let gpu = if let Some(gpu) = &mut self.gpu {
-            gpu
+        let renderer = if let Some(renderer) = &mut self.renderer {
+            renderer
         } else {
             return;
         };
@@ -46,10 +54,10 @@ impl ApplicationHandler for App {
                 event_loop.exit();
             }
             WindowEvent::Resized(size) => {
-                gpu.resize(size);
+                renderer.resize(size);
             }
             WindowEvent::RedrawRequested => {
-                gpu.render().unwrap();
+                renderer.render().unwrap();
             }
             _ => (),
         }
