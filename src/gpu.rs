@@ -122,6 +122,10 @@ impl Gpu {
             });
 
         {
+            let bg_rgb = [60, 136, 151]
+                .map(|x| x as f64 / 255.0) // Normalize
+                .map(|x| x.powf(2.2)); // Convert to sRGB
+            
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -130,10 +134,10 @@ impl Gpu {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
-                            a: 0.1,
+                            r: bg_rgb[0],
+                            g: bg_rgb[1],
+                            b: bg_rgb[2],
+                            a: 1.0,
                         }),
                         store: wgpu::StoreOp::Store,
                     },

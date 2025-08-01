@@ -196,7 +196,7 @@ impl StarMaterial {
             label: "Star texture".into(),
             dimension: wgpu::TextureDimension::D2,
             size: extent,
-            format: wgpu::TextureFormat::Rgba8Unorm,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
             sample_count: 1,
             mip_level_count: 1,
             usage: wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING,

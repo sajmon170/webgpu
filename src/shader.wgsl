@@ -36,5 +36,10 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
     uv *= rot;
     uv *= 0.55;
     uv += vec2f(0.5, 0.5);
-    return textureSample(text, sampl, uv);
+
+    let sample = textureSample(text, sampl, uv);
+    if sample.a == 0 {
+       discard;
+    }
+    return sample;
 }
