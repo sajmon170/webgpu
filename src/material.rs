@@ -121,7 +121,7 @@ impl StarMaterial {
                     config: &wgpu::SurfaceConfiguration,
                     pipeline_layout: &wgpu::PipelineLayout) -> wgpu::RenderPipeline {
         let shader_module = device.create_shader_module(
-            wgpu::include_wgsl!("shader.wgsl")
+            wgpu::include_wgsl!("shaders/star_shader.wgsl")
         );
 
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
