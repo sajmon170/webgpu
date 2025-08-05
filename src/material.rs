@@ -1,35 +1,35 @@
 use std::{default::Default, mem::size_of, num::NonZero};
 use crate::{data::Vertex, gpu::Gpu};
 use bytemuck::NoUninit;
-use glam::{Mat3A, Vec2};
+use glam::{Mat4, Vec2};
 use wgpu::{Extent3d, TexelCopyBufferLayout};
 
 pub trait Material {
     fn set_render_pass(&self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue);
     // TODO: refactor transforms out of materials into a separate bind group
     // owned by Object
-    fn set_transform(&mut self, transform: Mat3A);
+    fn set_transform(&mut self, transform: Mat4);
 }
 
 #[repr(C, packed)]
 #[derive(Copy, Clone, NoUninit)]
 struct UniformData {
-    pub xform: Mat3A,
+    pub xform: Mat4,
     pub time: f32,
     _align: [u8; 16 - size_of::<f32>()],
 }
 
-pub struct StarMaterial {
+pub struct SimpleMaterial {
     pipeline: wgpu::RenderPipeline,
     bind_group: wgpu::BindGroup,
     uniform_buffer: wgpu::Buffer,
     start_time: std::time::Instant,
     // TODO - refactor this
-    xform: Mat3A,
-    texture: wgpu::Texture
+    xform: Mat4,
+    texture: wgpu::Texture,
 }
 
-impl StarMaterial {
+impl SimpleMaterial {
     fn setup_bind_group(device: &wgpu::Device, uniform_buffer: &wgpu::Buffer, texture: &wgpu::Texture)
                         -> (wgpu::BindGroup, wgpu::PipelineLayout) {
         let bind_group_layout_descriptor = wgpu::BindGroupLayoutDescriptor {
@@ -116,12 +116,12 @@ impl StarMaterial {
 
         (bind_group, pipeline_layout)
     }
-    
+ 
     fn make_pipeline(device: &wgpu::Device,
-                    config: &wgpu::SurfaceConfiguration,
-                    pipeline_layout: &wgpu::PipelineLayout) -> wgpu::RenderPipeline {
+                     config: &wgpu::SurfaceConfiguration,
+                     pipeline_layout: &wgpu::PipelineLayout) -> wgpu::RenderPipeline {
         let shader_module = device.create_shader_module(
-            wgpu::include_wgsl!("shaders/star_shader.wgsl")
+            wgpu::include_wgsl!("shaders/simple.wgsl")
         );
 
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -143,7 +143,7 @@ impl StarMaterial {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: None,
+                cull_mode: Some(wgpu::Face::Back),
                 unclipped_depth: false,
                 polygon_mode: wgpu::PolygonMode::Fill,
                 conservative: false
@@ -158,7 +158,14 @@ impl StarMaterial {
                     write_mask: wgpu::ColorWrites::ALL
                 })],
             }),
-            depth_stencil: None,
+            depth_stencil: Some(wgpu::DepthStencilState {
+                // TODO - grab this info from outside
+                format: wgpu::TextureFormat::Depth24Plus,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default()
+            }),
             multisample: wgpu::MultisampleState {
                 count: 1,
                 mask: !0u64,
@@ -236,13 +243,13 @@ impl StarMaterial {
             uniform_buffer,
             pipeline,
             start_time,
-            xform: Mat3A::IDENTITY,
-            texture
+            xform: Mat4::IDENTITY,
+            texture,
         }
     }
 }
 
-impl Material for StarMaterial {
+impl Material for SimpleMaterial {
     fn set_render_pass(&self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
@@ -260,7 +267,7 @@ impl Material for StarMaterial {
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniform_data));
     }
 
-    fn set_transform(&mut self, transform: Mat3A) {
+    fn set_transform(&mut self, transform: Mat4) {
         self.xform = transform;
     }
 }

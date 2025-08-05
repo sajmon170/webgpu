@@ -3,7 +3,7 @@
 @group(0) @binding(2) var sampl: sampler;
 
 struct BindingInput {
-    xform: mat3x3f,
+    xform: mat4x4f,
     time: f32
 }
 
@@ -20,13 +20,15 @@ struct VertexOutput {
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
     let ratio = 640.0/480.0;
-    let xformed = uInput.xform * in.pos;
-    let pos = vec4f(xformed. / ratio, xformed.y, in.pos.z, 1.0);
-    return VertexOutput(pos, in.uv);
+    var xformed = uInput.xform * vec4f(in.pos, 1.0); 
+    xformed.x /= ratio;
+    xformed.z = 0.5*xformed.z + 0.5;
+    return VertexOutput(xformed, in.uv);
 }
 
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4f {
+fn fs_main(in: VertexOutput, @builtin(front_facing) face: bool) -> @location(0) vec4f {
+/*
     var uv = in.uv.xy;
     let sample = textureSample(text, sampl, uv);
   
@@ -35,4 +37,12 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
     }
   
     return sample;
+*/
+    if (face) {
+      let col = in.pos.z;
+      return vec4f(col, col, col, 1.0);
+    }
+    else {
+      return vec4f(1.0, 0.0, 0.0, 1.0);
+    }
 }

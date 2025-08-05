@@ -5,6 +5,7 @@ use std::sync::Arc;
 pub struct Gpu {
     window: Arc<Window>,
     surface: wgpu::Surface<'static>,
+    depth: wgpu::TextureView,
 
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
@@ -83,6 +84,35 @@ impl Gpu {
         Ok((device, queue))
     }
 
+    fn make_depth_texture(device: &wgpu::Device,
+                          config: &wgpu::SurfaceConfiguration,
+                          format: &wgpu::TextureFormat)
+    -> (wgpu::Texture, wgpu::TextureView) {
+        let sz = wgpu::Extent3d {
+            width: config.width,
+            height: config.height,
+            depth_or_array_layers: 1
+        };
+        
+        let texture_desc = wgpu::TextureDescriptor {
+            label: "Depth Texture".into(),
+            dimension: wgpu::TextureDimension::D2,
+            size: sz,
+            mip_level_count: 1,
+            sample_count: 1,
+            format: format.clone(),
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[]
+        };
+
+        let texture = device.create_texture(&texture_desc);
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        (texture, view)
+    }
+
     pub async fn new(window: Window, size: PhysicalSize<u32>) -> Result<Self> {
         let window = Arc::new(window);
         
@@ -95,9 +125,12 @@ impl Gpu {
         let config = Self::get_config(&adapter, &surface, size);
         surface.configure(&device, &config);
 
+        let (_, depth) = Self::make_depth_texture(&device, &config, &wgpu::TextureFormat::Depth24Plus);
+
         Ok(Self {
             window,
             surface,
+            depth,
             device,
             queue,
             config,
@@ -142,7 +175,14 @@ impl Gpu {
                         store: wgpu::StoreOp::Store,
                     },
                 })],
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.depth,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: wgpu::StoreOp::Store
+                    }),
+                    stencil_ops: None
+                }),
                 occlusion_query_set: None,
                 timestamp_writes: None,
             });

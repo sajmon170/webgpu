@@ -9,6 +9,7 @@ pub struct Mesh {
 }
 
 impl Mesh {
+    /*
     const VERTICES: &[Vertex] = &[
         Vertex { pos: [ 0.0,    1.0,   0.0], uv: [ 0.0,    1.0,   0.0]},
         Vertex { pos: [-0.35,   0.45,  0.0], uv: [-0.35,   0.45,  0.0]},
@@ -31,6 +32,28 @@ impl Mesh {
         1, 3, 5,
         9, 1, 5,
         9, 5, 7
+    ];
+    */
+    const VERTICES: &[Vertex] = &[
+        // Base
+        Vertex { pos: [ 0.8,  0.8, 0.0 ], uv: [0.0, 0.0, 0.0] },
+        Vertex { pos: [-0.8,  0.8, 0.0 ], uv: [0.0, 0.0, 0.0] },
+        Vertex { pos: [-0.8, -0.8, 0.0 ], uv: [0.0, 0.0, 0.0] },
+        Vertex { pos: [ 0.8, -0.8, 0.0 ], uv: [0.0, 0.0, 0.0] },
+
+        // Tip
+        Vertex { pos: [ 0.0,  0.0, 0.65 ], uv: [0.0, 0.0, 0.0] }
+    ];
+
+    const INDICES: &[u16] = &[
+        // Base
+        2, 1, 0,
+        3, 2, 0,
+        // Sides
+        3, 4, 2,
+        0, 4, 3,
+        1, 4, 0,
+        2, 4, 1
     ];
     
     fn make_vertex_buffer(device: &wgpu::Device, vtx: &[Vertex]) -> wgpu::Buffer {

@@ -1,4 +1,4 @@
-use glam::{Mat3A, Vec2};
+use glam::{Mat4, Vec3};
 
 use crate::{
     material::Material,
@@ -8,7 +8,7 @@ use crate::{
 pub struct Object {
     mesh: Mesh,
     material: Box<dyn Material>,
-    transform: Mat3A
+    transform: Mat4
 }
 
 impl Object {
@@ -16,7 +16,7 @@ impl Object {
         Self {
             mesh,
             material: Box::new(material),
-            transform: Mat3A::IDENTITY
+            transform: Mat4::IDENTITY
         }
     }
 
@@ -26,15 +26,23 @@ impl Object {
         self.mesh.set_render_pass(render_pass);
     }
 
-    pub fn translate(&mut self, translation: Vec2) {
-        self.transform *= Mat3A::from_translation(translation);
+    pub fn translate(&mut self, translation: Vec3) {
+        self.transform *= Mat4::from_translation(translation);
     }
 
-    pub fn rotate(&mut self, rotation: f32) {
-        self.transform *= Mat3A::from_rotation_z(rotation);
+    pub fn rotate_x(&mut self, rotation: f32) {
+        self.transform *= Mat4::from_rotation_x(rotation);
     }
 
-    pub fn scale(&mut self, scale: Vec2) {
-        self.transform *= Mat3A::from_scale(scale);
+    pub fn rotate_y(&mut self, rotation: f32) {
+        self.transform *= Mat4::from_rotation_y(rotation);
+    }
+
+    pub fn rotate_z(&mut self, rotation: f32) {
+        self.transform *= Mat4::from_rotation_z(rotation);
+    }
+
+    pub fn scale(&mut self, scale: Vec3) {
+        self.transform *= Mat4::from_scale(scale);
     }
 }
