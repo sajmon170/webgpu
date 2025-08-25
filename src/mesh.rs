@@ -33,13 +33,15 @@ impl Mesh {
         9, 1, 5,
         9, 5, 7
     ];
-    */
+     */
+
+    /*
     const VERTICES: &[Vertex] = &[
         // Base
-        Vertex { pos: [ 0.8,  0.8, 0.0 ], uv: [0.0, 0.0, 0.0] },
-        Vertex { pos: [-0.8,  0.8, 0.0 ], uv: [0.0, 0.0, 0.0] },
-        Vertex { pos: [-0.8, -0.8, 0.0 ], uv: [0.0, 0.0, 0.0] },
-        Vertex { pos: [ 0.8, -0.8, 0.0 ], uv: [0.0, 0.0, 0.0] },
+        Vertex { pos: [ 0.8,  0.8, -1.0 ], uv: [0.0, 0.0, 0.0] },
+        Vertex { pos: [-0.8,  0.8, -1.0 ], uv: [0.0, 0.0, 0.0] },
+        Vertex { pos: [-0.8, -0.8, -1.0 ], uv: [0.0, 0.0, 0.0] },
+        Vertex { pos: [ 0.8, -0.8, -1.0 ], uv: [0.0, 0.0, 0.0] },
 
         // Tip
         Vertex { pos: [ 0.0,  0.0, 0.65 ], uv: [0.0, 0.0, 0.0] }
@@ -54,6 +56,24 @@ impl Mesh {
         0, 4, 3,
         1, 4, 0,
         2, 4, 1
+    ];
+    */
+    const VERTICES: &[Vertex] = &[
+        Vertex { pos: [-0.5, -0.5, -0.3 ], uv: [1.0, 1.0, 1.0] },
+        Vertex { pos: [0.5, -0.5, -0.3 ], uv: [1.0, 1.0, 1.0] },
+        Vertex { pos: [0.5, 0.5, -0.3 ], uv: [1.0, 1.0, 1.0] },
+        Vertex { pos: [-0.5, 0.5, -0.3 ], uv: [1.0, 1.0, 1.0] },
+    ];
+
+    const INDICES: &[u16] = &[
+        // Base
+        0,  1,  2,
+        0,  2,  3,
+        // Sides
+        0,  1,  4,
+        1,  2,  4,
+        2,  3,  4,
+        3,  0,  4,
     ];
     
     fn make_vertex_buffer(device: &wgpu::Device, vtx: &[Vertex]) -> wgpu::Buffer {
