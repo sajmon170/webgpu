@@ -3,7 +3,9 @@
 @group(0) @binding(2) var sampl: sampler;
 
 struct BindingInput {
-    xform: mat4x4f,
+    projection: mat4x4f,
+    view: mat4x4f,
+    model: mat4x4f,
     time: f32
 }
 
@@ -19,21 +21,7 @@ struct VertexOutput {
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
-    let ratio = 640.0/480.0;
-
-    let focalLength = 2.0;
-    let near = 0.01;
-    let far = 100.0;
-    let P = transpose(mat4x4f(
-        focalLength,         0.0,                0.0,                   0.0,
-            0.0,     focalLength * ratio,        0.0,                   0.0,
-            0.0,             0.0,         far / (far - near), -far * near / (far - near),
-            0.0,             0.0,                1.0,                   0.0,
-    ));
-
-
-    let out = P * uInput.xform * vec4f(in.pos, 1.0);
-  
+    let out = uInput.projection * uInput.view * uInput.model * vec4f(in.pos, 1.0);
     return VertexOutput(out, in.uv);
 }
 

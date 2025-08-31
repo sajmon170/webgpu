@@ -21,8 +21,7 @@ impl Renderer {
                 object.translate(Vec3::new(0.0, 0.0, 2.0));
                 object.rotate_x(-3.0 * 3.14159 / 4.0);
                 object.rotate_z(time);
-                object.translate(Vec3::new(0.5, 0.0, 0.0));
-                object.scale(Vec3::new(0.3, 0.3, 0.3));
+                object.translate(Vec3::new(1.0, 0.0, 0.0));
                 
                 object.set_render_pass(render_pass, &self.gpu.queue);
             }

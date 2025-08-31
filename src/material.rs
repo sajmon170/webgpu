@@ -8,13 +8,17 @@ pub trait Material {
     fn set_render_pass(&self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue);
     // TODO: refactor transforms out of materials into a separate bind group
     // owned by Object
-    fn set_transform(&mut self, transform: Mat4);
+    fn set_projection_xform(&mut self, transform: Mat4);
+    fn set_view_xform(&mut self, transform: Mat4);
+    fn set_model_xform(&mut self, transform: Mat4);
 }
 
 #[repr(C, packed)]
 #[derive(Copy, Clone, NoUninit)]
 struct UniformData {
-    pub xform: Mat4,
+    pub projection: Mat4,
+    pub view: Mat4,
+    pub model: Mat4,
     pub time: f32,
     _align: [u8; 16 - size_of::<f32>()],
 }
@@ -25,7 +29,9 @@ pub struct SimpleMaterial {
     uniform_buffer: wgpu::Buffer,
     start_time: std::time::Instant,
     // TODO - refactor this
-    xform: Mat4,
+    projection: Mat4,
+    view: Mat4,
+    model: Mat4,
     texture: wgpu::Texture,
 }
 
@@ -243,7 +249,9 @@ impl SimpleMaterial {
             uniform_buffer,
             pipeline,
             start_time,
-            xform: Mat4::IDENTITY,
+            projection: Mat4::IDENTITY,
+            view: Mat4::IDENTITY,
+            model: Mat4::IDENTITY,
             texture,
         }
     }
@@ -259,7 +267,9 @@ impl Material for SimpleMaterial {
             .as_secs_f32();
 
         let uniform_data = UniformData {
-            xform: self.xform,
+            projection: self.projection,
+            view: self.view,
+            model: self.model,
             time,
             _align: Default::default(),
         };
@@ -267,7 +277,15 @@ impl Material for SimpleMaterial {
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniform_data));
     }
 
-    fn set_transform(&mut self, transform: Mat4) {
-        self.xform = transform;
+    fn set_projection_xform(&mut self, transform: Mat4) {
+        self.projection = transform;
+    }
+
+    fn set_view_xform(&mut self, transform: Mat4) {
+        self.view = transform;
+    }
+
+    fn set_model_xform(&mut self, transform: Mat4) {
+        self.model = transform;
     }
 }
