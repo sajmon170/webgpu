@@ -63,17 +63,18 @@ impl Mesh {
         Vertex { pos: [0.5, -0.5, -0.3 ], uv: [1.0, 1.0, 1.0] },
         Vertex { pos: [0.5, 0.5, -0.3 ], uv: [1.0, 1.0, 1.0] },
         Vertex { pos: [-0.5, 0.5, -0.3 ], uv: [1.0, 1.0, 1.0] },
+        Vertex { pos: [0.0, 0.0, 0.5 ], uv: [1.0, 1.0, 1.0] },
     ];
 
     const INDICES: &[u16] = &[
         // Base
         0,  1,  2,
         0,  2,  3,
-        // Sides
-        0,  1,  4,
-        1,  2,  4,
-        2,  3,  4,
-        3,  0,  4,
+        // Sides/
+        4,  1,  0,
+        4,  2,  1,
+        4,  3,  2,
+        4,  0,  3,
     ];
     
     fn make_vertex_buffer(device: &wgpu::Device, vtx: &[Vertex]) -> wgpu::Buffer {

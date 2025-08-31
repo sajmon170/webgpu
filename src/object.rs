@@ -45,4 +45,8 @@ impl Object {
     pub fn scale(&mut self, scale: Vec3) {
         self.transform *= Mat4::from_scale(scale);
     }
+
+    pub fn reset(&mut self) {
+        self.transform = Mat4::IDENTITY;
+    }
 }
