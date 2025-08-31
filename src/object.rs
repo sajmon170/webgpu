@@ -20,17 +20,12 @@ pub struct Object {
 
 impl Object {
     fn make_projection_matrix() -> Mat4 {
+        let fov = 45.0 * std::f32::consts::PI / 180.0;
         let ratio = 640.0/480.0;
-        let focal_length = 2.0;
         let near = 0.01;
         let far = 100.0;
         
-        Mat4::from_cols(
-            Vec4::new(focal_length, 0.0, 0.0, 0.0),
-            Vec4::new(0.0, focal_length * ratio, 0.0, 0.0),
-            Vec4::new(0.0, 0.0, far / (far - near), 1.0),
-            Vec4::new(0.0, 0.0, -far * near / (far - near), 0.0)
-        )
+        Mat4::perspective_lh(fov, ratio, near, far)
     }
 
     fn make_view_matrix() -> Mat4 {
