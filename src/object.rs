@@ -40,9 +40,10 @@ impl Object {
  
         for model in models {
             let vertices: Vec<_> = model.mesh.positions.chunks_exact(3)
-                .map(|pos| Vertex {
+                .zip(model.mesh.texcoords.chunks_exact(2))
+                .map(|(pos, uv)| Vertex {
                     pos: [pos[0], -pos[2], pos[1]],
-                    uv: [1.0, 1.0]
+                    uv: [uv[0], uv[1]]
                 })
                 .collect();
 
