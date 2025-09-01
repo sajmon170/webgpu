@@ -3,7 +3,7 @@ use crate::{Gpu, data::Vertex};
 
 pub struct Mesh {
     vertices: Vec<Vertex>,
-    indices: Vec<u16>,
+    indices: Vec<u32>,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
 }
@@ -17,7 +17,7 @@ impl Mesh {
         Vertex { pos: [0.0, 0.0, 0.5 ], uv: [1.0, 1.0, 1.0] },
     ];
 
-    const INDICES: &[u16] = &[
+    const INDICES: &[u32] = &[
         // Base
         0,  1,  2,
         0,  2,  3,
@@ -39,10 +39,10 @@ impl Mesh {
         device.create_buffer(&descriptor)
     }
 
-    fn make_index_buffer(device: &wgpu::Device, idx: &[u16]) -> wgpu::Buffer {
+    fn make_index_buffer(device: &wgpu::Device, idx: &[u32]) -> wgpu::Buffer {
         let descriptor = wgpu::BufferDescriptor {
             label: "Index buffer".into(),
-            size: (idx.len() * size_of::<u16>()) as u64,
+            size: (idx.len() * size_of::<u32>()) as u64,
             mapped_at_creation: false,
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::INDEX
         };
@@ -50,7 +50,7 @@ impl Mesh {
         device.create_buffer(&descriptor)
     }
 
-    pub fn new(gpu: &Gpu, vertices: Vec<Vertex>, indices: Vec<u16>) -> Self {
+    pub fn new(gpu: &Gpu, vertices: Vec<Vertex>, indices: Vec<u32>) -> Self {
         let vertex_buffer = Self::make_vertex_buffer(&gpu.device, &vertices);
         gpu.queue.write_buffer(&vertex_buffer, 0, &bytemuck::cast_slice(&vertices));
         let index_buffer = Self::make_index_buffer(&gpu.device, &indices);
@@ -70,7 +70,7 @@ impl Mesh {
 
     pub fn set_render_pass(&self, render_pass: &mut wgpu::RenderPass) {
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
         render_pass.draw_indexed(0..self.indices.len() as u32, 0, 0..1);
     }
 }

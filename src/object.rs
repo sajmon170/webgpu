@@ -1,8 +1,10 @@
+use std::path::Path;
+
 use glam::{Mat4, Vec3, Vec4};
+use tobj::LoadError;
 
 use crate::{
-    material::Material,
-    mesh::Mesh
+    data::Vertex, gpu::Gpu, material::{Material, SimpleMaterial}, mesh::Mesh
 };
 
 // Refactor: Create a Camera entity that renders objects and provides
@@ -10,7 +12,7 @@ use crate::{
 // camera and objects
 
 pub struct Object {
-    mesh: Mesh,
+    meshes: Vec<Mesh>,
     material: Box<dyn Material>,
     // Refactor this
     projection_xform: Mat4,
@@ -31,15 +33,31 @@ impl Object {
     fn make_view_matrix() -> Mat4 {
         Mat4::from_translation(Vec3::new(0.0, 0.0, 3.0))
     }
-    
-    pub fn new(mesh: Mesh, material: impl Material + 'static) -> Self {
-        Self {
-            mesh,
-            material: Box::new(material),
+
+    pub fn load_obj(gpu: &Gpu, path: &Path) -> Result<Self, LoadError> {
+        let (models, _) = tobj::load_obj(&path, &tobj::GPU_LOAD_OPTIONS)?;
+        let mut meshes = Vec::<Mesh>::new();
+ 
+        for model in models {
+            let vertices: Vec<_> = model.mesh.positions.chunks_exact(3)
+                .map(|pos| Vertex {
+                    pos: [pos[0], -pos[2], pos[1]],
+                    uv: [1.0, 1.0, 1.0]
+                })
+                .collect();
+
+            meshes.push(Mesh::new(gpu, vertices, model.mesh.indices));
+        }
+
+        let material = Box::new(SimpleMaterial::new(&gpu));
+
+        Ok(Self {
+            meshes,
+            material,
             projection_xform: Self::make_projection_matrix(),
             view_xform: Self::make_view_matrix(),
             model_xform: Mat4::IDENTITY
-        }
+        })
     }
 
     pub fn set_render_pass(&mut self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue) {
@@ -47,7 +65,10 @@ impl Object {
         self.material.set_view_xform(self.view_xform);
         self.material.set_model_xform(self.model_xform);
         self.material.set_render_pass(render_pass, queue);
-        self.mesh.set_render_pass(render_pass);
+
+        for mesh in &self.meshes {
+            mesh.set_render_pass(render_pass);
+        }
     }
 
     pub fn translate(&mut self, translation: Vec3) {

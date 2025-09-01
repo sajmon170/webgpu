@@ -2,6 +2,7 @@ use crate::{gpu::Gpu, material::SimpleMaterial, mesh::Mesh, object::Object};
 use winit::dpi::PhysicalSize;
 use anyhow::Result;
 use glam::{Vec2, Vec3};
+use std::path::Path;
 
 pub struct Renderer {
     begin: std::time::Instant,
@@ -29,12 +30,10 @@ impl Renderer {
     }
 
     pub fn new(gpu: Gpu) -> Self {
-        let mesh = Mesh::new_debug(&gpu);
-        let material = SimpleMaterial::new(&gpu);
-        let obj0 = Object::new(mesh, material);        
+        let obj = Object::load_obj(&gpu, &Path::new("src/res/models/sus/sus.obj")).unwrap();
         let begin = std::time::Instant::now();
 
-        Self { begin, gpu, objects: vec![obj0] }
+        Self { begin, gpu, objects: vec![obj] }
     }
 
     pub fn resize(&mut self, size: PhysicalSize<u32>) {
