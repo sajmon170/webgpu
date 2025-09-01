@@ -11,12 +11,12 @@ struct BindingInput {
 
 struct VertexInput {
     @location(0) pos: vec3f,
-    @location(1) uv: vec3f
+    @location(1) uv: vec2f
 };
 
 struct VertexOutput {
     @builtin(position) pos: vec4f,
-    @location(0) uv: vec3f
+    @location(0) uv: vec2f
 };
 
 @vertex

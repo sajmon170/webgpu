@@ -42,7 +42,7 @@ impl Object {
             let vertices: Vec<_> = model.mesh.positions.chunks_exact(3)
                 .map(|pos| Vertex {
                     pos: [pos[0], -pos[2], pos[1]],
-                    uv: [1.0, 1.0, 1.0]
+                    uv: [1.0, 1.0]
                 })
                 .collect();
 
