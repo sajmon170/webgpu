@@ -1,4 +1,4 @@
-use std::{default::Default, mem::size_of, num::NonZero};
+use std::{default::Default, mem::size_of, num::NonZero, path::Path};
 use crate::{data::Vertex, gpu::Gpu};
 use bytemuck::NoUninit;
 use glam::{Mat4, Vec2};
@@ -39,7 +39,7 @@ impl SimpleMaterial {
     fn setup_bind_group(device: &wgpu::Device, uniform_buffer: &wgpu::Buffer, texture: &wgpu::Texture)
                         -> (wgpu::BindGroup, wgpu::PipelineLayout) {
         let bind_group_layout_descriptor = wgpu::BindGroupLayoutDescriptor {
-            label: "Star material bind group layout".into(),
+            label: "Simple material bind group layout".into(),
             entries: &[
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
@@ -84,7 +84,7 @@ impl SimpleMaterial {
 
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         let sampler_descriptor = wgpu::SamplerDescriptor {
-            label: "Star texture sampler".into(),
+            label: "Simple texture sampler".into(),
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -194,9 +194,9 @@ impl SimpleMaterial {
         device.create_buffer(&descriptor)
     }
 
-    fn make_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Texture {
-        let texture_bytes = include_bytes!("res/star.png");
-        let texture_rgba = image::load_from_memory(texture_bytes).unwrap()
+    fn make_texture(device: &wgpu::Device, queue: &wgpu::Queue, path: &Path) -> wgpu::Texture {
+        let texture_bytes = std::fs::read(path).unwrap();
+        let texture_rgba = image::load_from_memory(&texture_bytes).unwrap()
             .to_rgba8();
         let (tex_width, tex_height) = texture_rgba.dimensions();
         let extent = Extent3d {
@@ -206,7 +206,7 @@ impl SimpleMaterial {
         };
         
         let descriptor = wgpu::TextureDescriptor {
-            label: "Star texture".into(),
+            label: "Simple texture".into(),
             dimension: wgpu::TextureDimension::D2,
             size: extent,
             format: wgpu::TextureFormat::Rgba8UnormSrgb,
@@ -237,9 +237,9 @@ impl SimpleMaterial {
         texture
     }
     
-    pub fn new(gpu: &Gpu) -> Self {
+    pub fn new(gpu: &Gpu, path: &Path) -> Self {
         let uniform_buffer = Self::make_uniform_buffer(&gpu.device);
-        let texture = Self::make_texture(&gpu.device, &gpu.queue);
+        let texture = Self::make_texture(&gpu.device, &gpu.queue, path);
         let (bind_group, pipeline_layout) = Self::setup_bind_group(&gpu.device, &uniform_buffer, &texture);
         let pipeline = Self::make_pipeline(&gpu.device, &gpu.config, &pipeline_layout);
         let start_time = std::time::Instant::now();

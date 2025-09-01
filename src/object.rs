@@ -11,9 +11,14 @@ use crate::{
 // view and projection transforms. Create a Scene entity that stores
 // camera and objects
 
+// TODO - Remove this struct later
+struct Renderable {
+    mesh: Mesh,
+    material: Box<dyn Material>
+}
+
 pub struct Object {
-    meshes: Vec<Mesh>,
-    material: Box<dyn Material>,
+    objs: Vec<Renderable>,
     // Refactor this
     projection_xform: Mat4,
     view_xform: Mat4,
@@ -35,10 +40,11 @@ impl Object {
     }
 
     pub fn load_obj(gpu: &Gpu, path: &Path) -> Result<Self, LoadError> {
-        let (models, _) = tobj::load_obj(&path, &tobj::GPU_LOAD_OPTIONS)?;
-        let mut meshes = Vec::<Mesh>::new();
+        let (models, materials) = tobj::load_obj(&path, &tobj::GPU_LOAD_OPTIONS)?;
+        let materials = materials.unwrap();
+        let mut objs = Vec::<Renderable>::new();
  
-        for model in models {
+        for (model, material) in models.iter().zip(materials) {
             let vertices: Vec<_> = model.mesh.positions.chunks_exact(3)
                 .zip(model.mesh.texcoords.chunks_exact(2))
                 .map(|(pos, uv)| Vertex {
@@ -47,14 +53,15 @@ impl Object {
                 })
                 .collect();
 
-            meshes.push(Mesh::new(gpu, vertices, model.mesh.indices));
+            let path = material.diffuse_texture.unwrap_or("src/res/star.png".into());
+            let material = Box::new(SimpleMaterial::new(&gpu, &Path::new(&path)));
+            let mesh = Mesh::new(gpu, vertices, model.mesh.indices.clone());
+
+            objs.push(Renderable { mesh, material });
         }
 
-        let material = Box::new(SimpleMaterial::new(&gpu));
-
         Ok(Self {
-            meshes,
-            material,
+            objs,
             projection_xform: Self::make_projection_matrix(),
             view_xform: Self::make_view_matrix(),
             model_xform: Mat4::IDENTITY
@@ -62,12 +69,12 @@ impl Object {
     }
 
     pub fn set_render_pass(&mut self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue) {
-        self.material.set_projection_xform(self.projection_xform);
-        self.material.set_view_xform(self.view_xform);
-        self.material.set_model_xform(self.model_xform);
-        self.material.set_render_pass(render_pass, queue);
-
-        for mesh in &self.meshes {
+        for Renderable { mesh, material } in &mut self.objs {
+            material.set_projection_xform(self.projection_xform);
+            material.set_view_xform(self.view_xform);
+            material.set_model_xform(self.model_xform);
+            material.set_render_pass(render_pass, queue);
+            
             mesh.set_render_pass(render_pass);
         }
     }
