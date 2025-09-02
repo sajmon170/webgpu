@@ -19,6 +19,7 @@ struct UniformData {
     pub projection: Mat4,
     pub view: Mat4,
     pub model: Mat4,
+    pub normal: Mat4,
     pub time: f32,
     _align: [u8; 16 - size_of::<f32>()],
 }
@@ -274,6 +275,7 @@ impl Material for SimpleMaterial {
             projection: self.projection,
             view: self.view,
             model: self.model,
+            normal: self.model.inverse().transpose(),
             time,
             _align: Default::default(),
         };

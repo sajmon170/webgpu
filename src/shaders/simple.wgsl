@@ -6,6 +6,7 @@ struct BindingInput {
     projection: mat4x4f,
     view: mat4x4f,
     model: mat4x4f,
+    normal: mat4x4f,
     time: f32
 }
 
@@ -24,7 +25,7 @@ struct VertexOutput {
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
     let out = uInput.projection * uInput.view * uInput.model * vec4f(in.pos, 1.0);
-    let normal = (uInput.model * vec4f(in.normal, 0.0)).xyz;
+    let normal = (uInput.normal * vec4f(in.normal, 0.0)).xyz;
     return VertexOutput(out, normal, in.uv);
 }
 
