@@ -1,23 +1,22 @@
-# Blender 4.5.1 LTS MTL File: 'final.blend'
+# Blender 4.5.2 LTS MTL File: 'final.blend'
 # www.blender.org
 
 newmtl Material
-Kd 0.233015 0.095927 0.024287
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-Pr 0.500000
+Pr 1.000000
 Pm 0.000000
 Ps 0.000000
 Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
+map_Kd /home/sajmon/obama side.png
 
 newmtl back
-Kd 0.800000 0.800000 0.800000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.450000
@@ -30,6 +29,7 @@ Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
+map_Kd /home/sajmon/obama side.png
 
 newmtl bottom
 Ks 0.500000 0.500000 0.500000
@@ -44,10 +44,9 @@ Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
-map_Kd obama portrait.png
+map_Kd /home/sajmon/obama portrait.png
 
 newmtl front
-Kd 0.800000 0.800000 0.800000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.450000
@@ -60,6 +59,7 @@ Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
+map_Kd /home/sajmon/obama portrait.png
 
 newmtl sides
 Kd 0.800000 0.800000 0.800000
@@ -75,3 +75,4 @@ Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
+map_Kd /home/sajmon/obama side.png
