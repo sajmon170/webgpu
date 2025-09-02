@@ -46,9 +46,11 @@ impl Object {
  
         for model in models.iter() {
             let vertices: Vec<_> = model.mesh.positions.chunks_exact(3)
+                .zip(model.mesh.normals.chunks_exact(3))
                 .zip(model.mesh.texcoords.chunks_exact(2))
-                .map(|(pos, uv)| Vertex {
+                .map(|((pos, normal), uv)| Vertex {
                     pos: [pos[0], -pos[2], pos[1]],
+                    normal: [normal[0], normal[1], normal[2]],
                     uv: [uv[0], 1.0 - uv[1]]
                 })
                 .collect();
