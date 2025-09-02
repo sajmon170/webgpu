@@ -19,10 +19,10 @@ impl Renderer {
                     .as_secs_f32();
 
                 object.reset();
-                object.translate(Vec3::new(0.0, 0.0, 2.0));
+                //object.translate(Vec3::new(0.0, 0.0, 2.0));
                 object.rotate_x(-3.0 * 3.14159 / 4.0);
                 object.rotate_z(time);
-                object.translate(Vec3::new(1.0, 0.0, 0.0));
+                //object.translate(Vec3::new(1.0, 0.0, 0.0));
                 
                 object.set_render_pass(render_pass, &self.gpu.queue);
             }
@@ -30,7 +30,7 @@ impl Renderer {
     }
 
     pub fn new(gpu: Gpu) -> Self {
-        let obj = Object::load_obj(&gpu, &Path::new("src/res/models/sus/sus.obj")).unwrap();
+        let obj = Object::load_obj(&gpu, &Path::new("src/res/models/obamium/obamium.obj")).unwrap();
         let begin = std::time::Instant::now();
 
         Self { begin, gpu, objects: vec![obj] }

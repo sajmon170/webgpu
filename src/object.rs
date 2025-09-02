@@ -44,17 +44,24 @@ impl Object {
         let materials = materials.unwrap();
         let mut objs = Vec::<Renderable>::new();
  
-        for (model, material) in models.iter().zip(materials) {
+        for model in models.iter() {
             let vertices: Vec<_> = model.mesh.positions.chunks_exact(3)
                 .zip(model.mesh.texcoords.chunks_exact(2))
                 .map(|(pos, uv)| Vertex {
                     pos: [pos[0], -pos[2], pos[1]],
-                    uv: [uv[0], uv[1]]
+                    uv: [uv[0], 1.0 - uv[1]]
                 })
                 .collect();
 
-            let path = material.diffuse_texture.unwrap_or("src/res/star.png".into());
-            let material = Box::new(SimpleMaterial::new(&gpu, &Path::new(&path)));
+            let path = if let Some(id) = model.mesh.material_id
+                && let Some(diffuse) = &materials[id].diffuse_texture {
+                diffuse
+            }
+            else {
+                &"src/res/star.png".into()
+            };
+
+            let material = Box::new(SimpleMaterial::new(&gpu, &Path::new(path)));
             let mesh = Mesh::new(gpu, vertices, model.mesh.indices.clone());
 
             objs.push(Renderable { mesh, material });

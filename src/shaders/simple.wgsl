@@ -27,11 +27,6 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 @fragment
 fn fs_main(in: VertexOutput, @builtin(front_facing) face: bool) -> @location(0) vec4f {
-    if (face) {
-      let col = 1.0 - in.pos.z;
-      return vec4f(col, col, col, 1.0);
-    }
-    else {
-      return vec4f(1.0, 0.0, 0.0, 1.0);
-    }
+    let sample = textureSample(text, sampl, in.uv);
+    return sample;
 }
