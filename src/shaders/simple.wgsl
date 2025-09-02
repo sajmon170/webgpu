@@ -24,11 +24,14 @@ struct VertexOutput {
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
     let out = uInput.projection * uInput.view * uInput.model * vec4f(in.pos, 1.0);
-    return VertexOutput(out, in.normal, in.uv);
+    let normal = (uInput.model * vec4f(in.normal, 0.0)).xyz;
+    return VertexOutput(out, normal, in.uv);
 }
 
 @fragment
 fn fs_main(in: VertexOutput, @builtin(front_facing) face: bool) -> @location(0) vec4f {
     let sample = textureSample(text, sampl, in.uv);
-    return sample;
+    let light = vec3f(1.0, 0.0, 0.0);
+    let normal = normalize(in.normal);
+    return dot(light, normal) * sample;
 }
