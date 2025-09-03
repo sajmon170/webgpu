@@ -7,6 +7,7 @@ struct BindingInput {
     view: mat4x4f,
     model: mat4x4f,
     normal: mat4x4f,
+    camera_pos: vec3f,
     time: f32
 }
 

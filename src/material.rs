@@ -1,11 +1,12 @@
 use std::{default::Default, mem::size_of, num::NonZero, path::Path};
 use crate::{data::Vertex, gpu::Gpu};
 use bytemuck::NoUninit;
-use glam::{Mat4, Vec2};
+use glam::{Mat4, Vec3};
 use wgpu::{Extent3d, TexelCopyBufferLayout};
 
+// TODO - refactor camera position out of this
 pub trait Material {
-    fn set_render_pass(&self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue);
+    fn set_render_pass(&self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue, camera: Vec3);
     // TODO: refactor transforms out of materials into a separate bind group
     // owned by Object
     fn set_projection_xform(&mut self, transform: Mat4);
@@ -20,8 +21,8 @@ struct UniformData {
     pub view: Mat4,
     pub model: Mat4,
     pub normal: Mat4,
+    pub camera_pos: Vec3,
     pub time: f32,
-    _align: [u8; 16 - size_of::<f32>()],
 }
 
 pub struct SimpleMaterial {
@@ -263,7 +264,7 @@ impl SimpleMaterial {
 }
 
 impl Material for SimpleMaterial {
-    fn set_render_pass(&self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue) {
+    fn set_render_pass(&self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue, camera: Vec3) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
 
@@ -276,8 +277,8 @@ impl Material for SimpleMaterial {
             view: self.view,
             model: self.model,
             normal: self.model.inverse().transpose(),
+            camera_pos: camera,
             time,
-            _align: Default::default(),
         };
 
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniform_data));

@@ -35,8 +35,10 @@ impl Object {
         Mat4::perspective_lh(fov, ratio, near, far)
     }
 
+    const CAMERA_POS: Vec3 = Vec3::new(0.0, 0.0, 3.0); 
+
     fn make_view_matrix() -> Mat4 {
-        Mat4::from_translation(Vec3::new(0.0, 0.0, 3.0))
+        Mat4::from_translation(Self::CAMERA_POS)
     }
 
     pub fn load_obj(gpu: &Gpu, path: &Path) -> Result<Self, LoadError> {
@@ -82,7 +84,7 @@ impl Object {
             material.set_projection_xform(self.projection_xform);
             material.set_view_xform(self.view_xform);
             material.set_model_xform(self.model_xform);
-            material.set_render_pass(render_pass, queue);
+            material.set_render_pass(render_pass, queue, Self::CAMERA_POS);
             
             mesh.set_render_pass(render_pass);
         }
