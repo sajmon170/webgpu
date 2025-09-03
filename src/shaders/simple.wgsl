@@ -42,12 +42,9 @@ fn fs_main(in: VertexOutput, @builtin(front_facing) face: bool) -> @location(0) 
     let diffuse = max(0.0, dot(light, normal)) * sample;
     
     let R = reflect(-light, normal);
-    let angle = dot(R, in.view_direction);
-
-    var specular = vec4f(0.0);
-    if angle > 0.9 {
-        specular = vec4f(1.0);
-    }
+    let angle = max(0.0, dot(R, in.view_direction));
+    let hardness = 10.0;
+    let specular = vec4f(vec3f(pow(angle, hardness)), 1.0);
     
     return diffuse + specular;
 }
