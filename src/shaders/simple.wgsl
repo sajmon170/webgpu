@@ -20,20 +20,34 @@ struct VertexInput {
 struct VertexOutput {
     @builtin(position) pos: vec4f,
     @location(0) normal: vec3f,
-    @location(1) uv: vec2f,
+    @location(1) view_direction: vec3f,
+    @location(2) uv: vec2f,
 };
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
-    let out = uInput.projection * uInput.view * uInput.model * vec4f(in.pos, 1.0);
+    let world_pos = uInput.model * vec4f(in.pos, 1.0);
+    let out_pos = uInput.projection * uInput.view * world_pos;
     let normal = (uInput.normal * vec4f(in.normal, 0.0)).xyz;
-    return VertexOutput(out, normal, in.uv);
+    let view_direction = uInput.camera_pos - world_pos.xyz;
+    return VertexOutput(out_pos, normal, view_direction, in.uv);
 }
 
 @fragment
 fn fs_main(in: VertexOutput, @builtin(front_facing) face: bool) -> @location(0) vec4f {
+    let light = vec3f(1.0, 0.0, 0.0); 
     let sample = textureSample(text, sampl, in.uv);
-    let light = vec3f(1.0, 0.0, 0.0);
     let normal = normalize(in.normal);
-    return dot(light, normal) * sample;
+    
+    let diffuse = max(0.0, dot(light, normal)) * sample;
+    
+    let R = reflect(-light, normal);
+    let angle = dot(R, in.view_direction);
+
+    var specular = vec4f(0.0);
+    if angle > 0.9 {
+        specular = vec4f(1.0);
+    }
+    
+    return diffuse + specular;
 }
