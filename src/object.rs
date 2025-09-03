@@ -41,19 +41,39 @@ impl Object {
         Mat4::from_translation(Self::CAMERA_POS)
     }
 
+    fn fill_tangents(mut a: Vertex, mut b: Vertex, mut c: Vertex)
+                     -> (Vertex, Vertex, Vertex) {
+        let e_pos_b = glam::Vec3::from(b.pos) - glam::Vec3::from(a.pos);
+        let e_pos_c = glam::Vec3::from(c.pos) - glam::Vec3::from(a.pos);
+
+        let e_uv_b = glam::Vec2::from(b.uv) - glam::Vec2::from(a.uv);
+        let e_uv_c = glam::Vec2::from(c.uv) - glam::Vec2::from(a.uv);
+
+        let t_vec = (e_pos_b * e_uv_c.x - e_pos_c * e_uv_b.y).normalize();
+        let b_vec = (e_pos_c * e_uv_b.x - e_pos_b * e_uv_c.x).normalize();
+
+        for mut vtx in [a, b, c] {
+            vtx.tangent = t_vec.into();
+            vtx.bitangent = b_vec.into();
+        }
+
+        (a, b, c)
+    }
+
     pub fn load_obj(gpu: &Gpu, path: &Path) -> Result<Self, LoadError> {
         let (models, materials) = tobj::load_obj(&path, &tobj::GPU_LOAD_OPTIONS)?;
         let materials = materials.unwrap();
         let mut objs = Vec::<Renderable>::new();
  
         for model in models.iter() {
-            let vertices: Vec<_> = model.mesh.positions.chunks_exact(3)
+            let mut vertices: Vec<_> = model.mesh.positions.chunks_exact(3)
                 .zip(model.mesh.normals.chunks_exact(3))
                 .zip(model.mesh.texcoords.chunks_exact(2))
                 .map(|((pos, normal), uv)| Vertex {
                     pos: [pos[0], -pos[2], pos[1]],
                     normal: [normal[0], normal[1], normal[2]],
-                    uv: [uv[0], 1.0 - uv[1]]
+                    uv: [uv[0], 1.0 - uv[1]],
+                    ..Default::default()
                 })
                 .collect();
 
@@ -83,6 +103,20 @@ impl Object {
             let material = Box::new(SimpleMaterial::new(&gpu,
                                                         &Path::new(texture_path),
                                                         &Path::new(normal_path)));
+
+
+            for point_idx in model.mesh.indices.chunks_exact(3) {
+                let (a, b, c) = Self::fill_tangents(
+                    vertices[point_idx[0] as usize],
+                    vertices[point_idx[1] as usize],
+                    vertices[point_idx[2] as usize]
+                );
+
+                vertices[point_idx[0] as usize] = a;
+                vertices[point_idx[1] as usize] = b;
+                vertices[point_idx[2] as usize] = c;
+            }
+            
             let mesh = Mesh::new(gpu, vertices, model.mesh.indices.clone());
 
             objs.push(Renderable { mesh, material });

@@ -15,7 +15,9 @@ struct BindingInput {
 struct VertexInput {
     @location(0) pos: vec3f,
     @location(1) normal: vec3f,
-    @location(2) uv: vec2f,
+    @location(2) tangent: vec3f,
+    @location(3) bitangent: vec3f,
+    @location(4) uv: vec2f,
 };
 
 struct VertexOutput {
@@ -38,14 +40,14 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 fn fs_main(in: VertexOutput, @builtin(front_facing) face: bool) -> @location(0) vec4f {
     let light = vec3f(1.0, 0.0, 0.0); 
     let sample = textureSample(text, sampl, in.uv);
-    let normal = normalize(in.normal);
+    let normal = normalize(textureSample(norm, sampl, in.uv).rgb - 0.5);
     
-    let diffuse = max(0.0, dot(light, normal)) * sample;
+    let diffuse = max(0.4, dot(-light, normal)) * sample;
     
     let R = reflect(-light, normal);
     let angle = max(0.0, dot(R, in.view_direction));
-    let hardness = 10.0;
-    let specular = vec4f(vec3f(pow(angle, hardness)), 1.0);
+    let hardness = 1.0;
+    let specular = 0.0*vec4f(vec3f(pow(angle, hardness)), 1.0);
     
     return diffuse + specular;
 }

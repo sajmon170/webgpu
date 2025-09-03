@@ -46,7 +46,7 @@ impl Gpu {
 
     fn get_limits() -> wgpu::Limits {
         let mut limits = wgpu::Limits::defaults();
-        limits.max_vertex_attributes = 3;
+        limits.max_vertex_attributes = 5;
         limits.max_bind_groups = 1;
 
         limits
