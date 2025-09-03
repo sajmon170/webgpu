@@ -38,7 +38,9 @@ pub struct SimpleMaterial {
 }
 
 impl SimpleMaterial {
-    fn setup_bind_group(device: &wgpu::Device, uniform_buffer: &wgpu::Buffer, texture: &wgpu::Texture)
+    // TODO - refactor texture inputs into another struct
+    fn setup_bind_group(device: &wgpu::Device, uniform_buffer: &wgpu::Buffer,
+                        texture: &wgpu::Texture, normal_map: &wgpu::Texture)
                         -> (wgpu::BindGroup, wgpu::PipelineLayout) {
         let bind_group_layout_descriptor = wgpu::BindGroupLayoutDescriptor {
             label: "Simple material bind group layout".into(),
@@ -68,6 +70,18 @@ impl SimpleMaterial {
                 wgpu::BindGroupLayoutEntry {
                     binding: 2,
                     visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float {
+                            filterable: true
+                        },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false
+                    },
+                    count: None
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None
                 }
@@ -84,7 +98,9 @@ impl SimpleMaterial {
 
         let pipeline_layout = device.create_pipeline_layout(&pipeline_descriptor);
 
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let normal_view = normal_map.create_view(&wgpu::TextureViewDescriptor::default());
+        
         let sampler_descriptor = wgpu::SamplerDescriptor {
             label: "Simple texture sampler".into(),
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -111,10 +127,14 @@ impl SimpleMaterial {
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&view)
+                    resource: wgpu::BindingResource::TextureView(&texture_view)
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&normal_view)
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
                     resource: wgpu::BindingResource::Sampler(&sampler)
                 }
             ]
@@ -243,10 +263,16 @@ impl SimpleMaterial {
         texture
     }
     
-    pub fn new(gpu: &Gpu, path: &Path) -> Self {
+    pub fn new(gpu: &Gpu, texture_path: &Path, normal_path: &Path) -> Self {
         let uniform_buffer = Self::make_uniform_buffer(&gpu.device);
-        let texture = Self::make_texture(&gpu.device, &gpu.queue, path);
-        let (bind_group, pipeline_layout) = Self::setup_bind_group(&gpu.device, &uniform_buffer, &texture);
+        let texture = Self::make_texture(&gpu.device, &gpu.queue, texture_path);
+        let normal_map = Self::make_texture(&gpu.device, &gpu.queue, normal_path);
+        let (bind_group, pipeline_layout) = Self::setup_bind_group(
+            &gpu.device,
+            &uniform_buffer,
+            &texture,
+            &normal_map
+        );
         let pipeline = Self::make_pipeline(&gpu.device, &gpu.config, &pipeline_layout);
         let start_time = std::time::Instant::now();
 

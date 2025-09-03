@@ -57,7 +57,9 @@ impl Object {
                 })
                 .collect();
 
-            let path = if let Some(id) = model.mesh.material_id
+            // TODO - refactor texture extraction code
+
+            let texture_path = if let Some(id) = model.mesh.material_id
                 && let Some(diffuse) = &materials[id].diffuse_texture {
                 diffuse
             }
@@ -65,7 +67,22 @@ impl Object {
                 &"src/res/star.png".into()
             };
 
-            let material = Box::new(SimpleMaterial::new(&gpu, &Path::new(path)));
+            let normal_path = if let Some(id) = model.mesh.material_id
+                && let Some(normal) = &materials[id].normal_texture {
+                if let Some("-bm") = normal.split_whitespace().next() {
+                    normal.splitn(3, " ").last().unwrap()
+                }
+                else {
+                    normal
+                }
+            }
+            else {
+                "src/res/star.png"
+            };
+
+            let material = Box::new(SimpleMaterial::new(&gpu,
+                                                        &Path::new(texture_path),
+                                                        &Path::new(normal_path)));
             let mesh = Mesh::new(gpu, vertices, model.mesh.indices.clone());
 
             objs.push(Renderable { mesh, material });

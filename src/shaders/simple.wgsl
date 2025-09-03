@@ -1,6 +1,7 @@
 @group(0) @binding(0) var<uniform> uInput: BindingInput;
 @group(0) @binding(1) var text: texture_2d<f32>;
-@group(0) @binding(2) var sampl: sampler;
+@group(0) @binding(2) var norm: texture_2d<f32>;
+@group(0) @binding(3) var sampl: sampler;
 
 struct BindingInput {
     projection: mat4x4f,
