@@ -60,10 +60,10 @@ fn fs_main(in: VertexOutput, @builtin(front_facing) face: bool) -> @location(0) 
     let diffuse = max(0.3, dot(-light, normal)) * texture_sample;
     //let diffuse = vec4f(world_normal, 1.0);
     
-    let R = normalize(reflect(-light, normal));
-    let angle = max(0.0, dot(R, in.view_direction));
+    let half_dir = normalize(normalize(in.view_direction) + normalize(light));
+    let angle = max(0.0, dot(normal, half_dir));
     let hardness = 32.0;
-    let specular = 0.6*vec4f(vec3f(pow(angle, hardness)), 1.0);
+    let specular = 0.4*vec4f(vec3f(pow(angle, hardness)), 1.0);
     
     return diffuse + specular;
 }
