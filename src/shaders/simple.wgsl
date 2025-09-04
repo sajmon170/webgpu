@@ -34,7 +34,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     let world_pos = uInput.model * vec4f(in.pos, 1.0);
     let out_pos = uInput.projection * uInput.view * world_pos;
     let normal = (uInput.normal * vec4f(in.normal, 0.0)).xyz;
-    let view_direction = uInput.camera_pos - world_pos.xyz;
+    let view_direction = normalize(uInput.camera_pos - world_pos.xyz);
 
     let tangent = (uInput.normal * vec4f(in.tangent, 0.0)).xyz;
     let bitangent = (uInput.normal * vec4f(in.bitangent, 0.0)).xyz;
@@ -57,13 +57,13 @@ fn fs_main(in: VertexOutput, @builtin(front_facing) face: bool) -> @location(0) 
     let strength = 0.5;
     let normal = mix(in.normal, world_normal, strength);
     
-    let diffuse = max(0.4, dot(-light, normal)) * texture_sample;
+    let diffuse = max(0.3, dot(-light, normal)) * texture_sample;
     //let diffuse = vec4f(world_normal, 1.0);
     
-    let R = reflect(-light, normal);
+    let R = normalize(reflect(-light, normal));
     let angle = max(0.0, dot(R, in.view_direction));
-    let hardness = 2.0;
-    let specular = 0.0*vec4f(vec3f(pow(angle, hardness)), 1.0);
+    let hardness = 32.0;
+    let specular = 0.6*vec4f(vec3f(pow(angle, hardness)), 1.0);
     
     return diffuse + specular;
 }
