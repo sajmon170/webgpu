@@ -49,10 +49,10 @@ impl Object {
         let e_uv_b = glam::Vec2::from(b.uv) - glam::Vec2::from(a.uv);
         let e_uv_c = glam::Vec2::from(c.uv) - glam::Vec2::from(a.uv);
 
-        let t_vec = (e_pos_b * e_uv_c.x - e_pos_c * e_uv_b.y).normalize();
-        let b_vec = (e_pos_c * e_uv_b.x - e_pos_b * e_uv_c.x).normalize();
+        let mut t_vec = (e_pos_b * e_uv_c.y - e_pos_c * e_uv_b.y).normalize();
+        let mut b_vec = (e_pos_c * e_uv_b.x - e_pos_b * e_uv_c.x).normalize();
 
-        for mut vtx in [a, b, c] {
+        for vtx in [&mut a, &mut b, &mut c] {
             vtx.tangent = t_vec.into();
             vtx.bitangent = b_vec.into();
         }
