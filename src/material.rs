@@ -222,7 +222,8 @@ impl SimpleMaterial {
         device.create_buffer(&descriptor)
     }
 
-    fn make_texture(device: &wgpu::Device, queue: &wgpu::Queue, path: &Path) -> wgpu::Texture {
+    fn make_texture(device: &wgpu::Device, queue: &wgpu::Queue,
+                    path: &Path, format: wgpu::TextureFormat) -> wgpu::Texture {
         let texture_bytes = std::fs::read(path).unwrap();
         let texture_rgba = image::load_from_memory(&texture_bytes).unwrap()
             .to_rgba8();
@@ -237,7 +238,7 @@ impl SimpleMaterial {
             label: "Simple texture".into(),
             dimension: wgpu::TextureDimension::D2,
             size: extent,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format,
             sample_count: 1,
             mip_level_count: 1,
             usage: wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING,
@@ -267,8 +268,18 @@ impl SimpleMaterial {
     
     pub fn new(gpu: &Gpu, texture_path: &Path, normal_path: &Path) -> Self {
         let uniform_buffer = Self::make_uniform_buffer(&gpu.device);
-        let texture = Self::make_texture(&gpu.device, &gpu.queue, texture_path);
-        let normal_map = Self::make_texture(&gpu.device, &gpu.queue, normal_path);
+        let texture = Self::make_texture(
+            &gpu.device,
+            &gpu.queue,
+            texture_path,
+            wgpu::TextureFormat::Rgba8UnormSrgb
+        );
+        let normal_map = Self::make_texture(
+            &gpu.device,
+            &gpu.queue,
+            normal_path,
+            wgpu::TextureFormat::Rgba8Unorm
+        );
         let (bind_group, pipeline_layout) = Self::setup_bind_group(
             &gpu.device,
             &uniform_buffer,
